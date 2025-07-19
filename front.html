@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ghost Word Hunt</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: white;
+        }
+
+        #mainMenu {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+        }
+
+        #titleScreen {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        #titleScreen h1 {
+            font-size: 72px;
+            margin: 0;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+            letter-spacing: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        #titleScreen h2 {
+            font-size: 36px;
+            margin: 10px 0;
+            color: #b1cee7;
+            text-shadow: 0 0 5px #b1cee7;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+
+        #titleScreen h3 {
+            font-size: 24px;
+            margin: 5px 0;
+            color: #9e93d8;
+        }
+
+        #startGameBtn {
+            background: #5d27b0;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 24px;
+            margin-top: 30px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(93, 39, 176, 0.7);
+            position: relative;
+            z-index: 10;
+        }
+
+        #startGameBtn:hover {
+            background: #4b1fa2;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(93, 39, 176, 0.9);
+        }
+
+        #scaryGhost {
+            position: absolute;
+            width: 200px;
+            height: 300px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><path d="M50 20Q30 20 20 35Q10 50 10 70Q10 90 30 100L35 95Q25 85 25 70Q25 55 35 45Q45 35 50 35Q55 35 65 45Q75 55 75 70Q75 85 65 95L70 100Q90 90 90 70Q90 50 80 35Q70 20 50 20Z" fill="white"/><circle cx="40" cy="55" r="5" fill="black"/><circle cx="60" cy="55" r="5" fill="black"/><path d="M40 75Q50 80 60 75" stroke="black" stroke-width="2" fill="none"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            display: none;
+            z-index: 5;
+            filter: drop-shadow(0 0 10px rgba(255,0,0,0.7));
+            transition: all 0.5s;
+        }
+
+        #scaryGhost.talking {
+            animation: talk 0.3s infinite alternate;
+        }
+
+        @keyframes talk {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-5px) scale(1.02); }
+        }
+
+        #ghostMessage {
+            position: absolute;
+            background: white;
+            color: black;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            display: none;
+            z-index: 20;
+            animation: floatMessage 2s ease-in-out infinite;
+        }
+
+        @keyframes floatMessage {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            background: linear-gradient(to bottom, #14184c, #1b1b7a);
+            border: 2px solid #5d27b0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(93, 39, 176, 0.5);
+            display: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: transparent;
+        }
+
+        #gameInfo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #b1cee7;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #e1bee7;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        #startButton {
+            background: #5d27b0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        #startButton:hover {
+            background: #4b1fa2;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #9e93d8;
+            font-size: 14px;
+        }
+
+        #soundToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #5d27b0;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        #techWords {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            color: #b1cee7;
+            font-size: 14px;
+        }
+
+        #speechBubble {
+            position: absolute;
+            background: white;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #jumpScare {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            display: none;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #jumpScareImage {
+            max-width: 100%;
+            max-height: 100%;
+            animation: scare 0.5s linear;
+        }
+
+        @keyframes scare {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #annabelle {
+            position: absolute;
+            width: 200px;
+            height: 300px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><path d="M50 10Q30 10 20 25Q10 40 10 60Q10 80 30 90L35 85Q25 75 25 60Q25 45 35 35Q45 25 50 25Q55 25 65 35Q75 45 75 60Q75 75 65 85L70 90Q90 80 90 60Q90 40 80 25Q70 10 50 10Z" fill="%23d4a373"/><circle cx="40" cy="45" r="5" fill="black"/><circle cx="60" cy="45" r="5" fill="black"/><path d="M40 65Q50 75 60 65" stroke="black" stroke-width="3" fill="none"/><path d="M30 100Q50 120 70 100" stroke="%238b5a2b" stroke-width="5" fill="none"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            display: none;
+            z-index: 15;
+            filter: drop-shadow(0 0 15px rgba(255,0,0,0.9));
+            transition: all 0.5s;
+            transform: scale(0.8);
+        }
+
+        #annabelle.scary {
+            animation: annabelleScare 1s forwards;
+        }
+
+        @keyframes annabelleScare {
+            0% { transform: scale(0.8) translateX(-100px); }
+            50% { transform: scale(1.5) translateX(0); }
+            100% { transform: scale(1.2) translateX(0); }
+        }
+  </style>
+</head>
+<body>
+
+    <div id="mainMenu">
+        <div id="titleScreen">
+            <h1>GHOSTIS</h1>
+            <h2>WORD HUNT</h2>
+            <h3>BCA HAUNTED ESCAPE</h3>
+            <div style="margin: 30px 0; font-size: 18px;">
+                <p>B</p>
+                <p>C</p>
+                <p>A</p>
+            </div>
+        </div>
+        <button id="startGameBtn">Start Haunted Journey</button>
+        <script>
+document.getElementById("startGameBtn").addEventListener("click", function() {
+    window.location.href = "index.html";
+});
+</script>
+
+        <div id="scaryGhost"></div>
+        <div id="annabelle"></div>
+        <div id="ghostMessage"></div>
+    </div>
+
+    <div id="jumpScare">
+        <img id="jumpScareImage" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 150'><path d='M50 10Q30 10 20 25Q10 40 10 60Q10 80 30 90L35 85Q25 75 25 60Q25 45 35 35Q45 25 50 25Q55 25 65 35Q75 45 75 60Q75 75 65 85L70 90Q90 80 90 60Q90 40 80 25Q70 10 50 10Z' fill='%23d4a373'/><circle cx='40' cy='45' r='7' fill='red'/><circle cx='60' cy='45' r='7' fill='red'/><path d='M40 65Q50 80 60 65' stroke='red' stroke-width='4' fill='none'/><path d='M30 100Q50 130 70 100' stroke='red' stroke-width='6' fill='none'/></svg>" alt="Scary Annabelle">
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="gameInfo">
+            <div>Score: <span id="score">0</span></div>
+            <div>Speed: <span id="speed">1</span></div>
+            <div>Tech Words: <span id="techWordsCount">0</span></div>
+            <div>Gems: <span id="gemsCount">0</span></div>
+        </div>
+        <div id="gameOver">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <p>Tech Words Collected: <span id="finalTechWords">0</span></p>
+            <p>Gems Collected: <span id="finalGems">0</span></p>
+            <button id="startButton">Play Again</button>
+        </div>
+        <div id="instructions">
+            Press SPACE to float up • Hold SPACE for higher float • Collect tech words & gems • Avoid witches, zombies, bombs & insects
+        </div>
+        <button id="soundToggle">Sound: ON</button>
+        <div id="speechBubble"></div>
+    </div>
+
+    <audio id="scarySound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-horror-laugh-428.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bubbleSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-cartoon-bubble-pop-1380.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="hurrahSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="ohnoSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-female-scream-1934.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // SCARY INTRO ANIMATION
+        const startBtn = document.getElementById('startGameBtn');
+        const scaryGhost = document.getElementById('scaryGhost');
+        const annabelle = document.getElementById('annabelle');
+        const ghostMessage = document.getElementById('ghostMessage');
+        const scarySound = document.getElementById('scarySound');
+        const bubbleSound = document.getElementById('bubbleSound');
+        const hurrahSound = document.getElementById('hurrahSound');
+        const ohnoSound = document.getElementById('ohnoSound');
+        const mainMenu = document.getElementById('mainMenu');
+        const jumpScare = document.getElementById('jumpScare');
+        const jumpScareImage = document.getElementById('jumpScareImage');
+
+        // Random scary messages
+        const scaryMessages = [
+            "HI HUMAN...", 
+            "LET'S PLAY...", 
+            "BOO!", 
+            "I SEE YOU...",
+            "JOIN ME...",
+            "DON'T RUN...",
+            "HEHEHE..."
+        ];
+
+        // Scary sound effects
+        const scarySounds = [
+            "https://assets.mixkit.co/sfx/preview/mixkit-horror-laugh-428.mp3",
+            "https://assets.mixkit.co/sfx/preview/mixkit-creepy-laugh-220.mp3",
+            "https://assets.mixkit.co/sfx/preview/mixkit-scary-demonic-laugh-1720.mp3"
+        ];
+
+        // Play bubble sound with message
+        function playBubbleWithMessage(message) {
+            if (bubbleSound) {
+                bubbleSound.currentTime = 0;
+                bubbleSound.play();
+            }
+            ghostMessage.textContent = message;
+            ghostMessage.style.display = 'block';
+        }
+
+        // Random jump scare with 30% chance
+        if (Math.random() < 0.3) {
+            setTimeout(() => {
+                showJumpScare();
+            }, 1000 + Math.random() * 2000);
+        }
+
+        function showJumpScare() {
+            jumpScare.style.display = 'flex';
+            scarySound.src = "https://assets.mixkit.co/sfx/preview/mixkit-scary-scream-689.mp3";
+            scarySound.volume = 1;
+            scarySound.play();
+            
+            setTimeout(() => {
+                jumpScare.style.display = 'none';
+                // Then show the flying ghost
+                setTimeout(() => {
+                    showScaryGhost();
+                }, 1000);
+            }, 800);
+        }
+
+        // Show flying ghost if jump scare didn't happen
+        if (!jumpScare.style.display || jumpScare.style.display === 'none') {
+            setTimeout(() => {
+                showScaryGhost();
+            }, 2000 + Math.random() * 3000);
+        }
+
+        function showScaryGhost() {
+            // Position ghost off-screen to the left
+            scaryGhost.style.display = 'block';
+            scaryGhost.style.left = '-200px';
+            scaryGhost.style.top = (window.innerHeight/2 - 150) + 'px';
+            
+            // Play scary sound
+            scarySound.src = scarySounds[Math.floor(Math.random() * scarySounds.length)];
+            scarySound.volume = 0.7;
+            scarySound.play();
+            
+            // Ghost flies in from the left
+            scaryGhost.style.transition = 'left 1.5s ease-out';
+            scaryGhost.style.left = (window.innerWidth/2 - 100) + 'px';
+            
+            // After reaching center, show message
+            setTimeout(() => {
+                scaryGhost.classList.add('talking');
+                playBubbleWithMessage(scaryMessages[Math.floor(Math.random() * scaryMessages.length)]);
+                
+                // Position message above ghost
+                ghostMessage.style.left = (window.innerWidth/2 - 50) + 'px';
+                ghostMessage.style.top = (window.innerHeight/2 - 180) + 'px';
+                
+                // Ghost moves to button after 1.5 seconds
+                setTimeout(() => {
+                    scaryGhost.style.transition = 'all 1s ease-in';
+                    scaryGhost.style.left = (startBtn.offsetLeft + startBtn.offsetWidth/2 - 50) + 'px';
+                    scaryGhost.style.top = (startBtn.offsetTop - 100) + 'px';
+                    scaryGhost.style.transform = 'scale(0.7)';
+                    
+                    // Change message
+                    setTimeout(() => {
+                        playBubbleWithMessage("CLICK ME...");
+                        ghostMessage.style.left = (startBtn.offsetLeft + startBtn.offsetWidth/2 - 40) + 'px';
+                        ghostMessage.style.top = (startBtn.offsetTop - 70) + 'px';
+                        
+                        // Make button pulse
+                        startBtn.style.animation = 'pulse 0.5s infinite alternate';
+                    }, 1000);
+                }, 1500);
+            }, 1500);
+        }
+
+        startBtn.addEventListener('mouseover', () => {
+            // Ghost reacts to hover
+            if (scaryGhost.style.display === 'block') {
+                scaryGhost.style.transform = 'scale(0.8) translateY(-10px)';
+                playBubbleWithMessage("I SEE YOU!");
+                
+                // Play another sound
+                setTimeout(() => {
+                    scarySound.src = scarySounds[Math.floor(Math.random() * scarySounds.length)];
+                    scarySound.play();
+                }, 500);
+            }
+        });
+
+        startBtn.addEventListener('mouseout', () => {
+            if (scaryGhost.style.display === 'block') {
+                scaryGhost.style.transform = 'scale(0.7)';
+                playBubbleWithMessage("CLICK ME...");
+            }
+        });
+
+        startBtn.addEventListener('click', function() {
+            // Show Annabelle doll for extra scare
+            annabelle.style.display = 'block';
+            annabelle.style.left = '-200px';
+            annabelle.style.top = (window.innerHeight/2 - 150) + 'px';
+            
+            setTimeout(() => {
+                annabelle.classList.add('scary');
+                annabelle.style.left = (window.innerWidth/2 - 100) + 'px';
+                
+                // Play loud sound
+                scarySound.src = "https://assets.mixkit.co/sfx/preview/mixkit-scary-scream-689.mp3";
+                scarySound.volume = 1;
+                scarySound.play();
+                
+                // Flash screen
+                mainMenu.style.backgroundColor = 'rgba(255,0,0,0.3)';
+                setTimeout(() => {
+                    mainMenu.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                }, 200);
+                
+                // Start game after delay
+                setTimeout(() => {
+                    document.getElementById('mainMenu').style.display = 'none';
+                    document.getElementById('gameContainer').style.display = 'block';
+                    initGame();
+                }, 1500);
+            }, 500);
+        });
+
+        // GAME CODE
+        function initGame() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const speechBubble = document.getElementById('speechBubble');
+            
+            // Sound system
+            let soundEnabled = true;
+            let audioContext;
+            
+            // Initialize audio context
+            function initAudio() {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            
+            // Generate ghostly sound effects
+            function playGhostSound() {
+                if (!soundEnabled || !audioContext) return;
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.type = 'sine';
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
+            
+            function playCollectSound() {
+                if (!soundEnabled || !audioContext) return;
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.type = 'triangle';
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+            }
+            
+            function playGemSound() {
+                if (!soundEnabled || !audioContext) return;
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(1200, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(2000, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                oscillator.type = 'sine';
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.2);
+            }
+            
+            function playCollisionSound() {
+                if (!soundEnabled || !audioContext) return;
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.5);
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.type = 'sawtooth';
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
+            
+            // Game variables
+            let gameRunning = true;
+            let score = 0;
+            let techWordsCollected = 0;
+            let gemsCollected = 0;
+            let gameSpeed = 2;
+            let groundY = 350;
+            
+            // Technical words for coins
+            const techWords = [
+                "React", "Vue", "Angular", "JavaScript", "TypeScript",
+                "Python", "Java", "C++", "Go", "Rust",
+                "Docker", "Kubernetes", "AWS", "Azure", "GCP",
+                "Blockchain", "AI", "ML", "VR", "AR"
+            ];
+            
+            // Ghost properties
+            const ghost = {
+                x: 100,
+                y: groundY - 80,
+                width: 60,
+                height: 80,
+                velY: 0,
+                floating: false,
+                grounded: true,
+                animFrame: 0,
+                scareFrame: 0,
+                isScaring: false
+            };
+            
+            // Coins array
+            let coins = [];
+            
+            // Gems array
+            let gems = [];
+            
+            // Obstacles array (witches, zombies, bombs, insects)
+            let obstacles = [];
+            
+            // Ghost particles
+            let particles = [];
+            
+            // Angels array
+            let angels = [];
+            
+            // Speech bubble
+            let speechBubbleTimeout = null;
+            
+            // Create initial angels
+            for (let i = 0; i < 3; i++) {
+                angels.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (groundY - 100),
+                    speed: 0.5 + Math.random() * 0.5,
+                    size: 20 + Math.random() * 10,
+                    wingPhase: Math.random() * Math.PI * 2
+                });
+            }
+            
+            // Keys
+            const keys = {};
+            
+            // Event listeners
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                
+                // Random scare effect when floating
+                if (e.code === 'Space','click' && ghost.grounded && Math.random() < 0.3) {
+                    ghost.isScaring = true;
+                    ghost.scareFrame = 0;
+                    setTimeout(() => {
+                        ghost.isScaring = false;
+                    }, 1000);
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+            
+            document.getElementById('startButton').addEventListener('click', restartGame);
+            
+            document.getElementById('soundToggle').addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+            document.getElementById('soundToggle').textContent = `Sound: ${soundEnabled ? 'ON' : 'OFF'}`;
+                if (soundEnabled) {
+                    initAudio();
+                }
+            });
+            
+            // Initialize audio on first user interaction
+            document.addEventListener('click', () => {
+                if (soundEnabled) {
+                    initAudio();
+                }
+            }, { once: true });
+            
+            // Show speech bubble with sound
+            function showSpeech(text, duration = 1500) {
+                speechBubble.textContent = text;
+                speechBubble.style.opacity = '1';
+                speechBubble.style.left = `${ghost.x + 30}px`;
+                speechBubble.style.top = `${ghost.y - 20}px`;
+                
+                // Play appropriate sound
+                if (text === "Hurrah!") {
+                    if (hurrahSound) {
+                        hurrahSound.currentTime = 0;
+                        hurrahSound.play();
+                    }
+                } else if (text === "Oh no!") {
+                    if (ohnoSound) {
+                        ohnoSound.currentTime = 0;
+                        ohnoSound.play();
+                    }
+                } else {
+                    if (bubbleSound) {
+                        bubbleSound.currentTime = 0;
+                        bubbleSound.play();
+                    }
+                }
+                
+                if (speechBubbleTimeout) {
+                    clearTimeout(speechBubbleTimeout);
+                }
+                
+                speechBubbleTimeout = setTimeout(() => {
+                    speechBubble.style.opacity = '0';
+                }, duration);
+            }
+            
+            // Ghost drawing function - now much scarier!
+            function drawGhost() {
+                ctx.save();
+                
+                ghost.animFrame += 0.1;
+                const floatEffect = Math.sin(ghost.animFrame) * 3;
+                
+                // Scare effect
+                if (ghost.isScaring) {
+                    ghost.scareFrame += 0.2;
+                    const scareIntensity = Math.sin(ghost.scareFrame) * 10;
+                    
+                    // Ghost body with scare effect
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 2 + scareIntensity/5;
+                    ctx.beginPath();
+                    
+                    // More jagged shape when scared
+                    ctx.moveTo(ghost.x + 10, ghost.y + 30 + floatEffect);
+                    ctx.lineTo(ghost.x + 15, ghost.y + 10 + floatEffect - scareIntensity);
+                    ctx.lineTo(ghost.x + 25, ghost.y + 15 + floatEffect - scareIntensity);
+                    ctx.lineTo(ghost.x + 35, ghost.y + 5 + floatEffect - scareIntensity);
+                    ctx.lineTo(ghost.x + 45, ghost.y + 20 + floatEffect - scareIntensity);
+                    ctx.lineTo(ghost.x + 50, ghost.y + 30 + floatEffect);
+                    
+                    // More jagged bottom
+                    ctx.lineTo(ghost.x + 45, ghost.y + 70 + floatEffect + scareIntensity/2);
+                    ctx.lineTo(ghost.x + 35, ghost.y + 75 + floatEffect + scareIntensity/2);
+                    ctx.lineTo(ghost.x + 25, ghost.y + 65 + floatEffect + scareIntensity/2);
+                    ctx.lineTo(ghost.x + 15, ghost.y + 75 + floatEffect + scareIntensity/2);
+                    ctx.lineTo(ghost.x + 10, ghost.y + 70 + floatEffect + scareIntensity/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Scary red glow
+                    ctx.shadowBlur = 20 + scareIntensity * 2;
+                    ctx.shadowColor = '#ff0000';
+                    ctx.fill();
+                    
+                    // Ghost eyes - red and angry when scared
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 20, ghost.y + 25 + floatEffect, 4 + scareIntensity/3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 40, ghost.y + 25 + floatEffect, 4 + scareIntensity/3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Ghost mouth - screaming when scared
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 2 + scareIntensity/5;
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 30, ghost.y + 35 + floatEffect, 10 + scareIntensity/2, 0.2 * Math.PI, 0.8 * Math.PI, true);
+                    ctx.stroke();
+                    
+                    // Create extra particles when scared
+                    if (Math.random() < 0.5) {
+                        particles.push({
+                            x: ghost.x + ghost.width/2 + (Math.random() - 0.5) * 20,
+                            y: ghost.y + ghost.height/2 + (Math.random() - 0.5) * 20,
+                            velX: -gameSpeed - Math.random() * 5,
+                            velY: (Math.random() - 0.5) * 5,
+                            size: Math.random() * 8 + 3,
+                            opacity: 0.9,
+                            life: 30,
+        color: `rgba(255, 0, 0, ${Math.random() * 0.7 + 0.3})`  
+                        });
+                    }
+                    
+                    playGhostSound();
+                } else {
+                    // Normal ghost appearance
+                    
+                    // Ghost body with more details
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.strokeStyle = '#b1cee7';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    
+                    // More detailed shape
+                    ctx.moveTo(ghost.x + 10, ghost.y + 30 + floatEffect);
+                    ctx.quadraticCurveTo(ghost.x + 15, ghost.y + 15 + floatEffect, ghost.x + 25, ghost.y + 20 + floatEffect);
+                    ctx.quadraticCurveTo(ghost.x + 35, ghost.y + 15 + floatEffect, ghost.x + 50, ghost.y + 30 + floatEffect);
+                    
+                    // More detailed bottom
+                    ctx.lineTo(ghost.x + 45, ghost.y + 70 + floatEffect);
+                    ctx.quadraticCurveTo(ghost.x + 40, ghost.y + 75 + floatEffect, ghost.x + 35, ghost.y + 70 + floatEffect);
+                    ctx.quadraticCurveTo(ghost.x + 30, ghost.y + 75 + floatEffect, ghost.x + 25, ghost.y + 70 + floatEffect);
+                    ctx.quadraticCurveTo(ghost.x + 20, ghost.y + 75 + floatEffect, ghost.x + 15, ghost.y + 70 + floatEffect);
+                    ctx.lineTo(ghost.x + 10, ghost.y + 70 + floatEffect);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Subtle glow
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = 'rgba(177, 206, 231, 0.5)';
+                    ctx.fill();
+                    
+                    // Ghost eyes - more detailed with glow
+                    ctx.fillStyle = '#5d27b0';
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = '#5d27b0';
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 20, ghost.y + 25 + floatEffect, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 40, ghost.y + 25 + floatEffect, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Eye pupils
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 20, ghost.y + 25 + floatEffect, 2, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 40, ghost.y + 25 + floatEffect, 2, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Ghost mouth - more detailed
+                    ctx.strokeStyle = '#5d27b0';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(ghost.x + 30, ghost.y + 35 + floatEffect, 8, 0.1 * Math.PI, 0.9 * Math.PI);
+                    ctx.stroke();
+                    
+                    // Fangs
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.moveTo(ghost.x + 27, ghost.y + 38 + floatEffect);
+                    ctx.lineTo(ghost.x + 29, ghost.y + 38 + floatEffect);
+                    ctx.lineTo(ghost.x + 28, ghost.y + 42 + floatEffect);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(ghost.x + 31, ghost.y + 38 + floatEffect);
+                    ctx.lineTo(ghost.x + 33, ghost.y + 38 + floatEffect);
+                    ctx.lineTo(ghost.x + 32, ghost.y + 42 + floatEffect);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+            
+            // Create ghost particle trail
+            function createParticle() {
+                particles.push({
+                    x: ghost.x + ghost.width/2,
+                    y: ghost.y + ghost.height/2,
+                    velX: -gameSpeed - Math.random() * 3,
+                    velY: (Math.random() - 0.5) * 3,
+                    size: Math.random() * 6 + 2,
+                    opacity: 0.8,
+                    life: 40,
+        color: `rgba(177, 206, 231, ${Math.random() * 0.5 + 0.3})`
+                });
+            }
+            
+            // Update particles
+            function updateParticles() {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.velX;
+                    p.y += p.velY;
+                    p.opacity -= 0.02;
+                    p.life--;
+                    
+                    if (p.life <= 0 || p.opacity <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+            }
+            
+            // Draw particles
+            function drawParticles() {
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.globalAlpha = p.opacity;
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+                });
+            }
+            
+            // Create coin with tech word
+            function createCoin() {
+                const word = techWords[Math.floor(Math.random() * techWords.length)];
+                const yPos = Math.random() * (groundY - 100) + 50;
+                
+                coins.push({
+                    x: canvas.width,
+                    y: yPos,
+                    width: 40,
+                    height: 40,
+                    word: word,
+                    collected: false
+                });
+            }
+            
+            // Create gem
+            function createGem() {
+                const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                gems.push({
+                    x: canvas.width,
+                    y: Math.random() * 100 + 20, // Gems appear higher in the sky
+                    width: 30,
+                    height: 30,
+                    color: color,
+                    collected: false,
+                    rotation: 0
+                });
+            }
+            
+            // Draw coins
+            function drawCoins() {
+                coins.forEach(coin => {
+                    if (!coin.collected) {
+                        ctx.save();
+                        
+                        // Coin body
+                        ctx.fillStyle = '#ffeb3b';
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#ffeb3b';
+                        ctx.beginPath();
+                        ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, 15, 0, 2 * Math.PI);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        
+                        // Coin text
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 10px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(coin.word.substring(0, 4), coin.x + coin.width/2, coin.y + coin.height/2);
+                        
+                        ctx.restore();
+                    }
+                });
+            }
+            
+            // Draw gems
+            function drawGems() {
+                gems.forEach(gem => {
+                    if (!gem.collected) {
+                        ctx.save();
+                        
+                        // Gem shine
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = gem.color;
+                        
+                        // Rotate gem
+                        ctx.translate(gem.x + gem.width/2, gem.y + gem.height/2);
+                        gem.rotation += 0.05;
+                        ctx.rotate(gem.rotation);
+                        
+                        // Gem shape (diamond)
+                        ctx.fillStyle = gem.color;
+                        ctx.beginPath();
+                        ctx.moveTo(0, -gem.height/2);
+                        ctx.lineTo(gem.width/2, 0);
+                        ctx.lineTo(0, gem.height/2);
+                        ctx.lineTo(-gem.width/2, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Gem highlight
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                        ctx.beginPath();
+                        ctx.moveTo(0, -gem.height/4);
+                        ctx.lineTo(gem.width/4, 0);
+                        ctx.lineTo(0, gem.height/4);
+                        ctx.lineTo(-gem.width/4, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        ctx.restore();
+                    }
+                });
+            }
+            
+            // Create obstacle (witches, zombies, bombs, insects)
+            function createObstacle() {
+                const types = ['witch', 'zombie', 'bomb', 'insect'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                let obstacle = {
+                    x: canvas.width,
+                    type: type,
+                    width: 50,
+                    height: 70,
+                    speed: gameSpeed + Math.random() * 2
+                };
+                
+                switch(type) {
+                    case 'witch':
+                        obstacle.y = groundY - 70;
+                        obstacle.width = 50;
+                        break;
+                    case 'zombie':
+                        obstacle.y = groundY - 60;
+                        obstacle.width = 40;
+                        break;
+                    case 'bomb':
+                        obstacle.y = groundY - 50;
+                        obstacle.width = 30;
+                        obstacle.height = 40;
+                        break;
+                    case 'insect':
+                        obstacle.y = Math.random() * (groundY - 100) + 30;
+                        obstacle.width = 40;
+                        obstacle.height = 30;
+                        break;
+                }
+                
+                obstacles.push(obstacle);
+            }
+            
+            // Draw obstacles
+            function drawObstacles() {
+                obstacles.forEach(obs => {
+                    ctx.save();
+                    
+                    switch(obs.type) {
+                        case 'witch':
+                            // Witch hat
+                            ctx.fillStyle = '#1a1a1a';
+                            ctx.strokeStyle = '#9c27b0';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(obs.x + 15, obs.y + 10);
+                            ctx.lineTo(obs.x + 25, obs.y - 15);
+                            ctx.lineTo(obs.x + 35, obs.y + 10);
+                            ctx.closePath();
+                            ctx.fill();
+                            ctx.stroke();
+                            
+                            // Witch face
+                            ctx.fillStyle = '#8bc34a';
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 25, obs.y + 20, 10, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Broomstick
+                            ctx.strokeStyle = '#8d6e63';
+                            ctx.lineWidth = 3;
+                            ctx.beginPath();
+                            ctx.moveTo(obs.x + 35, obs.y + 25);
+                            ctx.lineTo(obs.x + 50, obs.y + 35);
+                            ctx.stroke();
+                            break;
+                            
+                        case 'zombie':
+                            // Zombie head
+                            ctx.fillStyle = '#689f38';
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 20, obs.y + 15, 15, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Zombie eyes
+                            ctx.fillStyle = '#f44336';
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 15, obs.y + 12, 3, 0, 2 * Math.PI);
+                            ctx.fill();
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 25, obs.y + 12, 3, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Zombie mouth
+                            ctx.strokeStyle = '#1a1a1a';
+                            ctx.lineWidth = 2;
+                            for (let i = 0; i < 3; i++) {
+                                ctx.beginPath();
+                                ctx.arc(obs.x + 15 + i*5, obs.y + 20, 2, 0, Math.PI);
+                                ctx.stroke();
+                            }
+                            
+                            // Zombie arms
+                            ctx.strokeStyle = '#689f38';
+                            ctx.lineWidth = 3;
+                            ctx.beginPath();
+                            ctx.moveTo(obs.x + 5, obs.y + 25);
+                            ctx.lineTo(obs.x - 5, obs.y + 35);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(obs.x + 35, obs.y + 25);
+                            ctx.lineTo(obs.x + 45, obs.y + 35);
+                            ctx.stroke();
+                            break;
+                            
+                        case 'bomb':
+                            // Bomb body
+                            ctx.fillStyle = '#333';
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 15, obs.y + 15, 15, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Bomb fuse
+                            ctx.strokeStyle = '#ff5722';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(obs.x + 15, obs.y);
+                            ctx.lineTo(obs.x + 15, obs.y - 10);
+                            ctx.stroke();
+                            
+                            // Bomb highlight
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 8, obs.y + 8, 5, 0, 2 * Math.PI);
+                            ctx.fill();
+                            break;
+                            
+                        case 'insect':
+                            // Insect body
+                            ctx.fillStyle = '#4caf50';
+                            ctx.beginPath();
+                            ctx.ellipse(obs.x + 20, obs.y + 15, 15, 10, 0, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Insect wings
+                            ctx.fillStyle = 'rgba(200, 230, 200, 0.7)';
+                            ctx.beginPath();
+                            ctx.ellipse(obs.x + 15, obs.y + 5, 10, 5, 0, 0, 2 * Math.PI);
+                            ctx.fill();
+                            ctx.beginPath();
+                            ctx.ellipse(obs.x + 25, obs.y + 5, 10, 5, 0, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Insect eyes
+                            ctx.fillStyle = '#000';
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 12, obs.y + 10, 2, 0, 2 * Math.PI);
+                            ctx.fill();
+                            ctx.beginPath();
+                            ctx.arc(obs.x + 18, obs.y + 10, 2, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Insect legs
+                            ctx.strokeStyle = '#4caf50';
+                            ctx.lineWidth = 2;
+                            for (let i = 0; i < 3; i++) {
+                                ctx.beginPath();
+                                ctx.moveTo(obs.x + 10 + i*5, obs.y + 20);
+                                ctx.lineTo(obs.x + 5 + i*5, obs.y + 25);
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(obs.x + 10 + i*5, obs.y + 20);
+                                ctx.lineTo(obs.x + 15 + i*5, obs.y + 25);
+                                ctx.stroke();
+                            }
+                            break;
+                    }
+                    
+                    ctx.restore();
+                });
+            }
+            
+            // Draw angels
+            function drawAngels() {
+                angels.forEach(angel => {
+                    ctx.save();
+                    
+                    // Angel glow
+                    ctx.fillStyle = rgba(255, 255, 255, 0.1);
+                    ctx.beginPath();
+                    ctx.arc(angel.x, angel.y, angel.size * 1.5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Angel body
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.beginPath();
+                    ctx.arc(angel.x, angel.y, angel.size/3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Angel wings
+                    const wingAngle = Math.sin(angel.wingPhase) * 0.5;
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    
+                    // Left wing
+                    ctx.save();
+                    ctx.translate(angel.x, angel.y);
+                    ctx.rotate(-wingAngle);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.bezierCurveTo(-angel.size, -angel.size/2, -angel.size*1.5, 0, -angel.size, angel.size/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                    
+                    // Right wing
+                    ctx.save();
+                    ctx.translate(angel.x, angel.y);
+                    ctx.rotate(wingAngle);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.bezierCurveTo(angel.size, -angel.size/2, angel.size*1.5, 0, angel.size, angel.size/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                    
+                    // Angel halo
+                    ctx.strokeStyle = 'rgba(255, 255, 100, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(angel.x, angel.y - angel.size/3, angel.size/4, 0, 2 * Math.PI);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                });
+            }
+            
+            // Update angels
+            function updateAngels() {
+                angels.forEach(angel => {
+                    // Move angel
+                    angel.x += angel.speed;
+                    angel.wingPhase += 0.1;
+                    
+                    // Wrap around screen
+                    if (angel.x > canvas.width + angel.size * 2) {
+                        angel.x = -angel.size * 2;
+                        angel.y = Math.random() * (groundY - 100);
+                    }
+                });
+                
+                // Occasionally add new angels
+                if (Math.random() < 0.001 && angels.length < 5) {
+                    angels.push({
+                        x: -30,
+                        y: Math.random() * (groundY - 100),
+                        speed: 0.5 + Math.random() * 0.5,
+                        size: 20 + Math.random() * 10,
+                        wingPhase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+            
+            // Update coins
+            function updateCoins() {
+                for (let i = coins.length - 1; i >= 0; i--) {
+                    coins[i].x -= gameSpeed;
+                    
+                    // Check collection
+                    if (!coins[i].collected && 
+                        ghost.x < coins[i].x + coins[i].width &&
+                        ghost.x + ghost.width > coins[i].x &&
+                        ghost.y < coins[i].y + coins[i].height &&
+                        ghost.y + ghost.height > coins[i].y) {
+                        coins[i].collected = true;
+                        techWordsCollected++;
+                        score += 20;
+                        playCollectSound();
+                        showSpeech("Tech++", 800);
+                    }
+                    
+                    if (coins[i].x + coins[i].width < 0) {
+                        coins.splice(i, 1);
+                    }
+                }
+            }
+            
+            // Update gems
+            function updateGems() {
+                for (let i = gems.length - 1; i >= 0; i--) {
+                    gems[i].x -= gameSpeed;
+                    
+                    // Check collection
+                    if (!gems[i].collected && 
+                        ghost.x < gems[i].x + gems[i].width &&
+                        ghost.x + ghost.width > gems[i].x &&
+                        ghost.y < gems[i].y + gems[i].height &&
+                        ghost.y + ghost.height > gems[i].y) {
+                        gems[i].collected = true;
+                        gemsCollected++;
+                        score += 50;
+                        playGemSound();
+                        showSpeech("Hurrah!", 1000);
+                    }
+                    
+                    if (gems[i].x + gems[i].width < 0) {
+                        gems.splice(i, 1);
+                    }
+                }
+            }
+            
+            // Update obstacles
+            function updateObstacles() {
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    obstacles[i].x -= obstacles[i].speed;
+                    
+                    if (obstacles[i].x + obstacles[i].width < 0) {
+                        obstacles.splice(i, 1);
+                        score += 10;
+                    }
+                }
+            }
+            
+            // Collision detection with obstacles
+            function checkCollision() {
+                for (let obs of obstacles) {
+                    if (ghost.x < obs.x + obs.width - 10 &&
+                        ghost.x + ghost.width - 10 > obs.x &&
+                        ghost.y < obs.y + obs.height - 10 &&
+                        ghost.y + ghost.height - 10 > obs.y) {
+                        showSpeech("Oh no!", 1000);
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            // Update ghost physics
+            function updateGhost() {
+                // Floating
+                if (keys['Space','click'] && ghost.grounded) {
+                    ghost.velY = -12;
+                    ghost.floating = true;
+                    ghost.grounded = false;
+                    playGhostSound();
+                }
+                
+                // Variable float height
+                if (keys['Space','click'] && ghost.velY < 0) {
+                    ghost.velY -= 0.3;
+                }
+                
+                // Apply gravity
+                ghost.velY += 0.6;
+                ghost.y += ghost.velY;
+                
+                // Ground collision
+                if (ghost.y >= groundY - ghost.height) {
+                    ghost.y = groundY - ghost.height;
+                    ghost.velY = 0;
+                    ghost.floating = false;
+                    ghost.grounded = true;
+                }
+                
+                // Ceiling collision
+                if (ghost.y <= 0) {
+                    ghost.y = 0;
+                    ghost.velY = 0;
+                }
+                
+                // Create ghost particle trail
+                if (Math.random() < 0.3) {
+                    createParticle();
+                }
+            }
+            
+            // Draw ground
+            function drawGround() {
+                ctx.fillStyle = '#1b5e20';
+                ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+                
+                // Ground grass pattern
+                ctx.strokeStyle = '#2e7d32';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < canvas.width; i += 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, groundY);
+                    ctx.lineTo(i + 5, groundY - 5);
+                    ctx.lineTo(i + 10, groundY);
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw background
+            function drawBackground() {
+                // Moon
+                ctx.fillStyle = '#ffeb3b';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ffeb3b';
+                ctx.beginPath();
+                ctx.arc(700, 50, 30, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                // Stars
+                ctx.fillStyle = '#fff';
+                for (let i = 0; i < 30; i++) {
+                    const x = (i * 137) % canvas.width;
+                    const y = (i * 97) % (groundY - 50);
+                    const twinkle = Math.sin(Date.now() * 0.002 + i) * 0.5 + 0.5;
+                    ctx.globalAlpha = twinkle;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                
+                // Spooky clouds
+                ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+                for (let i = 0; i < 3; i++) {
+                    const cloudX = (i * 250 + Date.now() * 0.01) % (canvas.width + 100);
+                    const cloudY = 80 + i * 40;
+                    ctx.beginPath();
+                    ctx.arc(cloudX, cloudY, 20, 0, 2 * Math.PI);
+                    ctx.arc(cloudX + 20, cloudY, 25, 0, 2 * Math.PI);
+                    ctx.arc(cloudX + 40, cloudY, 20, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+            
+            // Game over
+            function gameOver() {
+                gameRunning = false;
+                playCollisionSound();
+                document.getElementById('finalScore').textContent = score;
+                document.getElementById('finalTechWords').textContent = techWordsCollected;
+                document.getElementById('finalGems').textContent = gemsCollected;
+                document.getElementById('gameOver').style.display = 'block';
+            }
+            
+            // Restart game
+            function restartGame() {
+                gameRunning = true;
+                score = 0;
+                techWordsCollected = 0;
+                gemsCollected = 0;
+                gameSpeed = 2;
+                ghost.x = 100;
+                ghost.y = groundY - 80;
+                ghost.velY = 0;
+                ghost.floating = false;
+                ghost.grounded = true;
+                obstacles = [];
+                coins = [];
+                gems = [];
+                particles = [];
+                angels = [];
+                
+                // Create initial angels
+                for (let i = 0; i < 3; i++) {
+                    angels.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (groundY - 100),
+                        speed: 0.5 + Math.random() * 0.5,
+                        size: 20 + Math.random() * 10,
+                        wingPhase: Math.random() * Math.PI * 2
+                    });
+                }
+                
+                document.getElementById('gameOver').style.display = 'none';
+            }
+            
+            // Game loop
+            function gameLoop() {
+                if (!gameRunning) {
+                    requestAnimationFrame(gameLoop);
+                    return;
+                }
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw background
+                drawBackground();
+                drawGround();
+                
+                // Update game
+                updateGhost();
+                updateObstacles();
+                updateCoins();
+                updateGems();
+                updateParticles();
+                updateAngels();
+                
+                // Draw everything
+                drawParticles();
+                drawGhost();
+                drawObstacles();
+                drawCoins();
+                drawGems();
+                drawAngels();
+                
+                // Spawn coins
+                if (Math.random() < 0.008) {
+                    createCoin();
+                }
+                
+                // Spawn gems (less frequently than coins)
+                if (Math.random() < 0.003) {
+                    createGem();
+                }
+                
+                // Spawn obstacles
+                if (Math.random() < 0.005 + gameSpeed * 0.0005) {
+                    createObstacle();
+                }
+                
+                // Check collision
+                if (checkCollision()) {
+                    gameOver();
+                }
+                
+                // Increase difficulty
+                gameSpeed += 0.001;
+                
+                // Update UI
+                document.getElementById('score').textContent = score;
+                document.getElementById('speed').textContent = Math.floor(gameSpeed);
+                document.getElementById('techWordsCount').textContent = techWordsCollected;
+                document.getElementById('gemsCount').textContent = gemsCollected;
+                
+                requestAnimationFrame(gameLoop);
+            }
+            
+            // Start game
+            gameLoop();
+        }
+    </script>
+</body>
+</html>
